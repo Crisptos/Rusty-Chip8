@@ -174,31 +174,119 @@ impl Chip8 {
                 if self.registers.v[x as usize] == kk {
                     self.registers.pc += 2;
                 }
-            },
+            }
 
             0x4000 => {
                 // SNE VX KK (Skip Not Equals VX KK)
                 if self.registers.v[x as usize] != kk {
                     self.registers.pc += 2;
                 }
-            },
+            }
 
             0x5000 => {
                 // SE VX VY (Skip Equals VX VY)
                 if self.registers.v[x as usize] == self.registers.v[y as usize] {
                     self.registers.pc += 2;
                 }
-            },
+            }
 
             0x6000 => {
                 // LD VX KK (Load VX KK)
                 self.registers.v[x as usize] = kk;
-            },
+            }
 
             0x7000 => {
                 // ADD VX KK (Add VX KK)
                 self.registers.v[x as usize] += kk;
-            },
+            }
+
+            0x9000 => {
+                // SNE VX KK (Skip Not Equal VX VY)
+                if self.registers.v[x as usize] != self.registers.v[y as usize] {
+                    self.registers.pc += 0x02;
+                }
+            }
+
+            _ => {}
+        }
+
+        match opcode & 0xF00F {
+            0x8000 => {
+                // LD VX VY (Load VX VY)
+                self.registers.v[x as usize] = self.registers.v[y as usize];
+            }
+
+            0x8001 => {
+                // OR VX VY (Or VX VY)
+                self.registers.v[x as usize] |= self.registers.v[y as usize];
+            }
+
+            0x8002 => {
+                // AND VX VY (And VX VY)
+                self.registers.v[x as usize] &= self.registers.v[y as usize];
+            }
+
+            0x8003 => {
+                // XOR VX VY (Xor VX VY)
+                self.registers.v[x as usize] ^= self.registers.v[y as usize];
+            }
+
+            0x8004 => {
+                // ADD VX VY (Add VX VY)
+                self.registers.v[0x0F] = 0x00;
+                let temp =
+                    ((self.registers.v[x as usize] as u16) + (self.registers.v[y as usize] as u16));
+                println!("{:#02x}", temp);
+                if temp & 0xFF00 != 0 {
+                    self.registers.v[0x0F] = 0x01;
+                }
+                self.registers.v[x as usize] = (temp & 0x00FF) as u8;
+            }
+
+            0x8005 => {
+                // SUB VX VY (Sub VX VY)
+                self.registers.v[0x0F] = 0x00;
+                if self.registers.v[x as usize] > self.registers.v[y as usize] {
+                    self.registers.v[0x0F] = 0x01;
+                }
+                self.registers.v[x as usize] =
+                    self.registers.v[x as usize].wrapping_sub(self.registers.v[y as usize]);
+            }
+
+            0x8006 => {
+                // SHR VX (Shift Right VX)
+                self.registers.v[0x0F] = if self.registers.v[x as usize] & 0x01 == 1 {
+                    0x01
+                } else {
+                    0x00
+                };
+
+                self.registers.v[x as usize] /= 2;
+            }
+
+            0x8007 => {
+                // SUBN VX VY (Subtract VX VY)
+                self.registers.v[0x0F] =
+                    if self.registers.v[y as usize] > self.registers.v[x as usize] {
+                        0x01
+                    } else {
+                        0x00
+                    };
+
+                self.registers.v[x as usize] =
+                    self.registers.v[y as usize].wrapping_sub(self.registers.v[x as usize]);
+            }
+
+            0x800E => {
+                // SHL VX (Shift Left VX)
+                self.registers.v[0x0F] = if self.registers.v[x as usize] >> 7 == 1 {
+                    0x01
+                } else {
+                    0x00
+                };
+
+                self.registers.v[x as usize] = self.registers.v[x as usize].wrapping_mul(2);
+            }
 
             _ => {}
         }

@@ -7,9 +7,10 @@ fn main() {
     let mut chip8 = Chip8::new();
     chip8.initialize();
 
-    chip8.registers.v[0x01] = 0x20;
-    chip8.dispatch(0x7140);
-    println!("{:#02x}", chip8.registers.v[0x01]);
+    chip8.registers.v[0x01] = 0x80;
+    chip8.registers.v[0x04] = 0x2;
+    chip8.dispatch(0x9140);
+    println!("{:#02x}", chip8.registers.pc);
 
     while !rl.window_should_close() {
         // Detect window close button or ESC key
