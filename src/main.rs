@@ -7,6 +7,10 @@ fn main() {
     let mut chip8 = Chip8::new();
     chip8.initialize();
 
+    chip8.registers.v[0x01] = 0x20;
+    chip8.dispatch(0x7140);
+    println!("{:#02x}", chip8.registers.v[0x01]);
+
     while !rl.window_should_close() {
         // Detect window close button or ESC key
         let mut d = rl.begin_drawing(&thread);
