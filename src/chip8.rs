@@ -1,3 +1,5 @@
+use rand::Rng;
+
 // Hexadecimal Representation of the Standard Sprites
 pub const SPRITES: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -39,6 +41,15 @@ impl Registers {
             pc: (0),
             sp: (0),
         }
+    }
+
+    pub fn print_status(&mut self){
+        for v in self.v.iter(){
+            println!("V: {:#02x}", v)
+        }
+        println!("I: {:#02x}", self.i);
+        println!("PC: {:#02x}", self.pc);
+        println!("SP: {:#02x}", self.sp);
     }
 }
 
@@ -86,15 +97,15 @@ impl Chip8 {
     }
 
     // Draw a sprite to the screen at x,y located at the memory index
-    pub fn draw(&mut self, x: usize, y: usize, memory_index: usize, size: usize) -> bool {
-        let mut is_colliding: bool = false;
+    pub fn draw(&mut self, x: usize, y: usize, memory_index: usize, size: usize) -> u8 {
+        let mut is_colliding: u8 = 0;
         for y_offset in 0..size {
             // We get the needed byte at the current Y-Index to get which bits are 1
             let y_index = self.memory[memory_index + y_offset];
             for x_offset in 0..8 {
                 if (y_index & (0x80 >> x_offset)) != 0 {
                     self.screen[((x + x_offset) % 64) + (64 * ((y + y_offset) % 32))] ^= true;
-                    is_colliding = true;
+                    is_colliding = 1;
                 }
             }
         }
@@ -164,10 +175,11 @@ impl Chip8 {
             _ => {}
         };
 
-        // Used for Opcodes that provide 2 arg. _xkk & 0F00 = x  _xkk & 00FF = kk
+        // Used for Opcodes that provide 2 - 3 arg. _xkk & 0F00 = x  _xkk & 00FF = kk
         let x: u8 = ((opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((opcode & 0x00F0) >> 4) as u8;
         let kk: u8 = (opcode & 0x00FF) as u8;
+        let n: u8 = (opcode & 0x000F) as u8;
         match opcode & 0xF000 {
             0x3000 => {
                 // SE VX KK (Skip Equals VX KK)
@@ -197,7 +209,7 @@ impl Chip8 {
 
             0x7000 => {
                 // ADD VX KK (Add VX KK)
-                self.registers.v[x as usize] += kk;
+                self.registers.v[x as usize] = self.registers.v[x as usize].wrapping_add(kk);
             }
 
             0x9000 => {
@@ -205,6 +217,21 @@ impl Chip8 {
                 if self.registers.v[x as usize] != self.registers.v[y as usize] {
                     self.registers.pc += 0x02;
                 }
+            }
+
+            0xC000 => {
+                // RND VX KK (Random VX KK)
+                self.registers.v[x as usize] = rand::thread_rng().gen_range(0..255) & kk;
+            }
+
+            0xD000 => {
+                // DRW VX VY N (Draw VX VY N)
+                self.registers.v[0x0F] = self.draw(
+                    self.registers.v[x as usize].into(),
+                    self.registers.v[y as usize].into(),
+                    self.registers.i.into(),
+                    n.into(),
+                )
             }
 
             _ => {}
@@ -235,7 +262,7 @@ impl Chip8 {
                 // ADD VX VY (Add VX VY)
                 self.registers.v[0x0F] = 0x00;
                 let temp =
-                    ((self.registers.v[x as usize] as u16) + (self.registers.v[y as usize] as u16));
+                    (self.registers.v[x as usize] as u16) + (self.registers.v[y as usize] as u16);
                 println!("{:#02x}", temp);
                 if temp & 0xFF00 != 0 {
                     self.registers.v[0x0F] = 0x01;
@@ -290,12 +317,14 @@ impl Chip8 {
 
             _ => {}
         }
+
+        self.registers.pc += 0x02;
     }
 }
 
 // Load file and return it as a Vec of bytes
 fn load_rom() -> Vec<u8> {
-    match std::fs::read("roms/logo.ch8") {
+    match std::fs::read("roms/test_opcode.ch8") {
         Ok(r) => r,
         Err(e) => {
             println!("{}", e);

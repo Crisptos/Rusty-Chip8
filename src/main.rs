@@ -1,5 +1,6 @@
 mod chip8;
 use chip8::{Chip8, SPRITES};
+use std::{thread, time::Duration};
 use raylib::prelude::*;
 
 fn main() {
@@ -7,17 +8,18 @@ fn main() {
     let mut chip8 = Chip8::new();
     chip8.initialize();
 
-    chip8.registers.v[0x01] = 0x80;
-    chip8.registers.v[0x04] = 0x2;
-    chip8.dispatch(0x9140);
-    println!("{:#02x}", chip8.registers.pc);
-
     while !rl.window_should_close() {
         // Detect window close button or ESC key
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::BLACK);
 
         // Check State of Hardware
+
+        // Dispatch Next Opcode
+        let opcode = chip8.get_next_op();
+        println!("Opcode: {:#02x}\n __Registers__", opcode);
+        chip8.dispatch(opcode);
+        chip8.registers.print_status();
 
         // Update Keyboard
 
@@ -29,5 +31,7 @@ fn main() {
                 }
             }
         }
+
+        thread::sleep(Duration::from_millis(1));
     }
 }
