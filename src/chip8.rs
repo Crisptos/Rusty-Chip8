@@ -153,6 +153,7 @@ impl Chip8 {
             0x1000 => {
                 // JP (Jump)
                 self.registers.pc = nnn;
+                self.registers.pc -= 2;
             }
 
             0x2000 => {
@@ -160,6 +161,7 @@ impl Chip8 {
                 self.registers.sp += 1;
                 self.stack.push(self.registers.pc);
                 self.registers.pc = nnn;
+                self.registers.pc -= 2;
             }
 
             0xA000 => {
@@ -175,11 +177,11 @@ impl Chip8 {
             _ => {}
         };
 
-        // Used for Opcodes that provide 2 - 3 arg. _xkk & 0F00 = x  _xkk & 00FF = kk
         let x: u8 = ((opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((opcode & 0x00F0) >> 4) as u8;
         let kk: u8 = (opcode & 0x00FF) as u8;
         let n: u8 = (opcode & 0x000F) as u8;
+        // Used for Opcodes that provide 2 - 3 arg. _xkk & 0F00 = x  _xkk & 00FF = kk
         match opcode & 0xF000 {
             0x3000 => {
                 // SE VX KK (Skip Equals VX KK)
@@ -237,6 +239,7 @@ impl Chip8 {
             _ => {}
         }
 
+        // Used for opcodes that start with 8
         match opcode & 0xF00F {
             0x8000 => {
                 // LD VX VY (Load VX VY)
@@ -318,13 +321,96 @@ impl Chip8 {
             _ => {}
         }
 
+        // Handle opcodes that start with E and F that reserve 4 bits for X
+        match opcode & 0xF0FF{
+
+            0xE09E => {
+                // SKP VX (Skip VX)
+                if self.keyboard[self.registers.v[x as usize] as usize]{
+                    self.registers.pc += 2;
+                }
+            }
+
+            0xE0A1 => {
+                // SKNP VX (Skip Not Pressed VX)
+                if !self.keyboard[self.registers.v[x as usize] as usize]{
+                    self.registers.pc += 2;
+                }
+            }
+
+            0xF007 => {
+                // LD VX DT (Load VX DT)
+                self.registers.v[x as usize] = self.registers.dt;
+            }
+
+            0xF00A => {
+                // LD VX K (Load VX DT)
+                for key in 0..self.keyboard.len(){
+                    if self.keyboard[key]{
+                        self.registers.v[x as usize] = key as u8;
+                        break;
+                    }
+                }
+                self.registers.pc -= 2;
+            }
+
+            0xF015 => {
+                // LD DT VX
+                self.registers.dt = self.registers.v[x as usize];
+            }
+
+            0xF018 => {
+                // LD ST VX
+                self.registers.st = self.registers.v[x as usize];
+            }
+
+            0xF01E => {
+                // ADD I VX
+                self.registers.i += self.registers.v[x as usize] as u16;
+            }
+
+            0xF029 => {
+                // LD F VX
+                self.registers.i = (self.registers.v[x as usize] as u16) * 5;
+            }
+
+            0xF033 => {
+                // LD B VX
+                println!("{}", self.registers.v[x as usize]);
+                let hun = self.registers.v[x as usize] / 100;
+                let ten = self.registers.v[x as usize] / 10 % 10;
+                let one = self.registers.v[x as usize] % 10;
+
+
+                self.memory[self.registers.i as usize] = hun;
+                self.memory[(self.registers.i+0x01) as usize] = ten;
+                self.memory[(self.registers.i+0x02) as usize] = one;
+            }
+
+            0xF055 => {
+                // LD I VX
+                for index in 0..x as u16{
+                    self.memory[(self.registers.i + index) as usize] = self.registers.v[index as usize];
+                }
+            }
+
+            0xF065 => {
+                // LD VX I
+                for index in 0..x as u16{
+                    self.registers.v[index as usize] = self.memory[(self.registers.i + index) as usize];
+                }
+            }
+
+            _ => {}
+        }
+
         self.registers.pc += 0x02;
     }
 }
 
 // Load file and return it as a Vec of bytes
 fn load_rom() -> Vec<u8> {
-    match std::fs::read("roms/test_opcode.ch8") {
+    match std::fs::read("roms/keypad_test.ch8") {
         Ok(r) => r,
         Err(e) => {
             println!("{}", e);
