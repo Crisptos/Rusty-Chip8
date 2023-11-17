@@ -389,14 +389,14 @@ impl Chip8 {
 
             0xF055 => {
                 // LD I VX
-                for index in 0..x as u16{
+                for index in 0..(x+1) as u16{
                     self.memory[(self.registers.i + index) as usize] = self.registers.v[index as usize];
                 }
             }
 
             0xF065 => {
                 // LD VX I
-                for index in 0..x as u16{
+                for index in 0..(x+1) as u16{
                     self.registers.v[index as usize] = self.memory[(self.registers.i + index) as usize];
                 }
             }
@@ -410,7 +410,7 @@ impl Chip8 {
 
 // Load file and return it as a Vec of bytes
 fn load_rom() -> Vec<u8> {
-    match std::fs::read("roms/keypad_test.ch8") {
+    match std::fs::read("roms/vert_brix.ch8") {
         Ok(r) => r,
         Err(e) => {
             println!("{}", e);

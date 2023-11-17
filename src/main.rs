@@ -1,6 +1,7 @@
 mod chip8;
 use chip8::{Chip8, SPRITES};
 use raylib::prelude::*;
+use raylib::core::audio::{Sound, RaylibAudio};
 use std::{thread, time::Duration};
 
 fn process_input(d: &RaylibHandle, chip8: &mut Chip8){
@@ -57,10 +58,48 @@ fn process_input(d: &RaylibHandle, chip8: &mut Chip8){
     } else {
         chip8.keyboard[0x09] = false;
     }
+
+    if d.is_key_down(KeyboardKey::KEY_ZERO) {
+        chip8.keyboard[0xA] = true;
+    } else {
+        chip8.keyboard[0xA] = false;
+    }
+
+    if d.is_key_down(KeyboardKey::KEY_MINUS) {
+        chip8.keyboard[0xB] = true;
+    } else {
+        chip8.keyboard[0xB] = false;
+    }
+
+    if d.is_key_down(KeyboardKey::KEY_EQUAL) {
+        chip8.keyboard[0xC] = true;
+    } else {
+        chip8.keyboard[0xC] = false;
+    }
+
+    if d.is_key_down(KeyboardKey::KEY_P) {
+        chip8.keyboard[0xD] = true;
+    } else {
+        chip8.keyboard[0xD] = false;
+    }
+
+    if d.is_key_down(KeyboardKey::KEY_LEFT_BRACKET) {
+        chip8.keyboard[0xE] = true;
+    } else {
+        chip8.keyboard[0xE] = false;
+    }
+
+    if d.is_key_down(KeyboardKey::KEY_RIGHT_BRACKET) {
+        chip8.keyboard[0xF] = true;
+    } else {
+        chip8.keyboard[0xF] = false;
+    }
 }
 
 fn main() {
     let (mut rl, thread) = raylib::init().size(640, 320).title("Chip 8 DEV").build();
+    let mut audio = RaylibAudio::init_audio_device();
+    let beep = Sound::load_sound("audio/beep.wav").unwrap();
     let mut chip8 = Chip8::new();
     chip8.initialize();
 
@@ -90,13 +129,12 @@ fn main() {
 
         // // Decrement Timers
         if chip8.registers.dt > 0 {
-            thread::sleep(Duration::from_millis(50));
+            thread::sleep(Duration::from_millis(5));
             chip8.registers.dt -= 1;
         }
         if chip8.registers.st > 0 {
+            audio.play_sound_multi(&beep);
             chip8.registers.st -= 1;
         }
-
-        thread::sleep(Duration::from_millis(150));
     }
 }
