@@ -16,7 +16,11 @@ The goal of this project is to create an interpreter that can be run on the desk
 - [X] Implement drawing to the screen through memory
 - [X] Load a chip 8 rom and copy the binary into memory
 - [X] Iterate through the loaded program
-- [ ] Dispatch opcodes (not all opcodes have been implemented yet... but soon :D)    
+- [X] Dispatch opcodes (not all opcodes have been implemented yet... but soon :D)   
+- [X] Add in a beep sound
+- [ ] Touch up the way the delay timer functions
+- [ ] Refactor the check for the controls
+- [ ] Test more ROMs 
 
 ### Emulator Journey Checklist
 This is one of my first projects in Rust and so far the language has been a joy to use. It'll most likely be my choice for future emulator development.
